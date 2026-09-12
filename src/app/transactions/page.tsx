@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 
@@ -27,6 +27,14 @@ import { useAccounts } from "@/features/accounts";
 import { usePayments } from "@/features/payments";
 
 export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-neutral-50" />}>
+      <TransactionsPageContent />
+    </Suspense>
+  );
+}
+
+function TransactionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const auth = useAuth();
