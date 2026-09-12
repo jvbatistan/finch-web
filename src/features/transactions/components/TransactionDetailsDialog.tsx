@@ -22,8 +22,8 @@ function formatSignedBRL(value: number) {
   return `${Number(value) < 0 ? "-" : ""}${formatBRL(value)}`;
 }
 
-function sourceLabel(source?: Transaction["source"]) {
-  return { bank: "Conta bancária", cash: "Dinheiro", card: "Cartão" }[source ?? ""] ?? "—";
+function sourceLabel(source: Transaction["source"]) {
+  return { bank: "Conta bancária", cash: "Dinheiro", card: "Cartão" }[source];
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {

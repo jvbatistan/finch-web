@@ -39,7 +39,7 @@ export type Transaction = {
     account: { id: number; name: string };
   }>;
   kind: "income" | "expense";
-  source?: "card" | "cash" | "bank";
+  source: "card" | "cash" | "bank";
   paid: boolean;
   note?: string | null;
   category?: TransactionCategory | null;
