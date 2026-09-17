@@ -131,15 +131,12 @@ describe("account statement service", () => {
   });
 
   it("exports CSV with statement filters and ignores pagination params", async () => {
-    const blob = new Blob(["csv"], { type: "text/csv" });
-    const fetchMock = vi.spyOn(global, "fetch").mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      blob: vi.fn().mockResolvedValue(blob),
+    const fetchMock = vi.spyOn(global, "fetch").mockResolvedValueOnce(new Response("csv", {
       headers: new Headers({
         "Content-Disposition": 'attachment; filename="finch-extrato-nubank-2026-07-29.csv"',
+        "Content-Type": "text/csv",
       }),
-    } as Response);
+    }));
 
     const result = await exportAccountStatementCsv(7, {
       startDate: "2026-07-01",
