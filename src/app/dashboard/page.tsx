@@ -37,6 +37,14 @@ function DashboardPageContent() {
     onUnauthorized: handleUnauthorized,
   });
 
+  const navigateMonth = (offset: number) => {
+    const date = new Date(year, month - 1 + offset, 1);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("month", String(date.getMonth() + 1));
+    params.set("year", String(date.getFullYear()));
+    router.push(`/dashboard?${params.toString()}`);
+  };
+
   if (auth.status === "loading") {
     return <div className="min-h-screen bg-neutral-50" />;
   }
@@ -60,7 +68,11 @@ function DashboardPageContent() {
           ))}
         </div>
       ) : (
-        <DashboardContent overview={overview} />
+        <DashboardContent
+          overview={overview}
+          onPreviousMonth={() => navigateMonth(-1)}
+          onNextMonth={() => navigateMonth(1)}
+        />
       )}
     </AppLayout>
   );

@@ -1,14 +1,16 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import DashboardPage from "@/app/dashboard/page";
 
 const push = vi.fn();
 const replace = vi.fn();
 const useAuth = vi.fn();
 const useDashboard = vi.fn();
+const useSearchParams = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace }),
-  useSearchParams: () => new URLSearchParams("month=9&year=2026"),
+  useSearchParams: () => useSearchParams(),
 }));
 
 vi.mock("@/lib/useAuth", () => ({
@@ -100,6 +102,7 @@ beforeEach(() => {
     status: "authenticated",
     user: { id: 1, name: "Joao", email: "joao@example.com", active: true },
   });
+  useSearchParams.mockReturnValue(new URLSearchParams("month=4&year=2026"));
   useDashboard.mockReturnValue({
     loading: false,
     error: null,
@@ -108,12 +111,6 @@ beforeEach(() => {
 });
 
 describe("DashboardPage", () => {
-  it("passes the month and year from the URL to the dashboard hook", () => {
-    render(<DashboardPage />);
-
-    expect(useDashboard).toHaveBeenCalledWith(expect.objectContaining({ month: 9, year: 2026 }));
-  });
-
   it("renders income, expense and balance data in the financial dashboard", () => {
     render(<DashboardPage />);
 
@@ -128,6 +125,56 @@ describe("DashboardPage", () => {
     expect(screen.getByText("Faturas e cartões")).toBeInTheDocument();
     expect(screen.getByText("Status das despesas")).toBeInTheDocument();
     expect(screen.queryByText("Em construção")).not.toBeInTheDocument();
+    expect(screen.getByText("Abril/2026")).toBeInTheDocument();
+  });
+
+  it("loads the competence supplied by a direct URL", () => {
+    useSearchParams.mockReturnValue(new URLSearchParams("month=8&year=2026"));
+    useDashboard.mockReturnValue({
+      loading: false,
+      error: null,
+      overview: {
+        ...dashboardOverview,
+        period: { month: 8, year: 2026, label: "agosto/2026" },
+      },
+    });
+
+    render(<DashboardPage />);
+
+    expect(useDashboard).toHaveBeenCalledWith(expect.objectContaining({ month: 8, year: 2026 }));
+    expect(screen.getByText("Agosto/2026")).toBeInTheDocument();
+  });
+
+  it("navigates to the previous and next month while preserving other query params", async () => {
+    const user = userEvent.setup();
+    useSearchParams.mockReturnValue(new URLSearchParams("view=summary&month=4&year=2026"));
+    render(<DashboardPage />);
+
+    await user.click(screen.getByRole("button", { name: "Mês anterior" }));
+    expect(push).toHaveBeenLastCalledWith("/dashboard?view=summary&month=3&year=2026");
+
+    await user.click(screen.getByRole("button", { name: "Mês seguinte" }));
+    expect(push).toHaveBeenLastCalledWith("/dashboard?view=summary&month=5&year=2026");
+  });
+
+  it("navigates from January to December of the previous year", async () => {
+    const user = userEvent.setup();
+    useSearchParams.mockReturnValue(new URLSearchParams("month=1&year=2026"));
+    render(<DashboardPage />);
+
+    await user.click(screen.getByRole("button", { name: "Mês anterior" }));
+
+    expect(push).toHaveBeenLastCalledWith("/dashboard?month=12&year=2025");
+  });
+
+  it("navigates from December to January of the next year", async () => {
+    const user = userEvent.setup();
+    useSearchParams.mockReturnValue(new URLSearchParams("month=12&year=2026"));
+    render(<DashboardPage />);
+
+    await user.click(screen.getByRole("button", { name: "Mês seguinte" }));
+
+    expect(push).toHaveBeenLastCalledWith("/dashboard?month=1&year=2027");
   });
 
   it("explains when the monthly balance is negative", () => {

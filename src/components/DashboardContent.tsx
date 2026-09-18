@@ -5,6 +5,8 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
   FileText,
   Receipt,
   ShoppingBag,
@@ -16,6 +18,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Props = {
   overview: DashboardOverview;
+};
+
+type DashboardContentProps = Props & {
+  onPreviousMonth: () => void;
+  onNextMonth: () => void;
 };
 
 type StatCardProps = {
@@ -561,7 +568,7 @@ function PaymentStatusCard({ overview }: Props) {
   );
 }
 
-export function DashboardContent({ overview }: Props) {
+export function DashboardContent({ overview, onPreviousMonth, onNextMonth }: DashboardContentProps) {
   const { summary, period } = overview;
   const balanceTotal = Number(summary.balance_total);
   const balanceIsPositive = balanceTotal >= 0;
@@ -574,7 +581,30 @@ export function DashboardContent({ overview }: Props) {
             <h1 className="text-3xl font-bold text-neutral-950">Dashboard</h1>
             <p className="mt-1.5 text-neutral-500">Panorama real das receitas, despesas, faturas e lançamentos recentes.</p>
           </div>
-          <QuickStats overview={overview} />
+          <div className="flex flex-col gap-4 sm:items-end">
+            <div className="flex w-full items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white p-1 sm:w-auto">
+              <button
+                type="button"
+                aria-label="Mês anterior"
+                onClick={onPreviousMonth}
+                className="rounded-md p-2 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <p className="min-w-32 text-center text-sm font-semibold text-neutral-900">
+                {capitalize(overview.period.label)}
+              </p>
+              <button
+                type="button"
+                aria-label="Mês seguinte"
+                onClick={onNextMonth}
+                className="rounded-md p-2 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+            <QuickStats overview={overview} />
+          </div>
         </div>
       </header>
 
@@ -605,4 +635,8 @@ export function DashboardContent({ overview }: Props) {
       </section>
     </div>
   );
+}
+
+function capitalize(value: string) {
+  return value ? `${value[0].toUpperCase()}${value.slice(1)}` : value;
 }
