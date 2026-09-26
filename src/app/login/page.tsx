@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { login } from "@/lib/auth";
@@ -101,12 +100,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-5 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
-            <span>Novo por aqui? </span>
-            <Link href="/register" className="font-medium text-blue-600 hover:text-blue-700">
-              Criar conta
-            </Link>
-          </div>
         </div>
 
         <div className="mt-6 flex items-center justify-center">

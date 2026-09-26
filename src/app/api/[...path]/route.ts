@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
+const BACKEND_URL = process.env.API_URL;
 const METHODS_WITH_BODY = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const RESPONSE_HEADERS = ["content-type", "content-disposition", "cache-control", "etag", "last-modified"];
 
@@ -27,11 +27,13 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const contentType = request.headers.get("content-type");
   const cookie = request.headers.get("cookie");
   const accept = request.headers.get("accept");
+  const csrfToken = request.headers.get("x-csrf-token");
   const dataEnvironmentSwitch = request.headers.get("x-finch-data-environment-switch");
 
   if (contentType) headers.set("content-type", contentType);
   if (cookie) headers.set("cookie", cookie);
   if (accept) headers.set("accept", accept);
+  if (csrfToken) headers.set("x-csrf-token", csrfToken);
   if (dataEnvironmentSwitch) {
     headers.set("x-finch-data-environment-switch", dataEnvironmentSwitch);
   }

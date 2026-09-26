@@ -23,6 +23,10 @@ describe("API proxy", () => {
       headers: {
         "content-type": "application/json",
         "x-finch-data-environment-switch": "confirmed",
+        "x-csrf-token": "csrf-example",
+        origin: "http://frontend.example.test",
+        referer: "http://frontend.example.test/settings",
+        "x-unrelated": "not-forwarded",
       },
       body: JSON.stringify({ environment: "supabase" }),
     });
@@ -37,6 +41,11 @@ describe("API proxy", () => {
       })
     );
     const requestInit = backendFetch.mock.calls[0][1];
-    expect(new Headers(requestInit?.headers).get("x-finch-data-environment-switch")).toBe("confirmed");
+    const forwardedHeaders = new Headers(requestInit?.headers);
+    expect(forwardedHeaders.get("x-finch-data-environment-switch")).toBe("confirmed");
+    expect(forwardedHeaders.get("x-csrf-token")).toBe("csrf-example");
+    expect(forwardedHeaders.get("origin")).toBeNull();
+    expect(forwardedHeaders.get("referer")).toBeNull();
+    expect(forwardedHeaders.get("x-unrelated")).toBeNull();
   });
 });
