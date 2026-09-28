@@ -15,6 +15,7 @@ import { useState, type ReactNode } from "react";
 import type { DashboardOverview } from "@/features/dashboard";
 import { CardBrandMark } from "@/components/CardBrandMark";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCivilDateBR } from "@/lib/civil-date";
 
 type Props = {
   overview: DashboardOverview;
@@ -49,10 +50,6 @@ function formatCompactBRL(value: number) {
     currency: "BRL",
     maximumFractionDigits: 0,
   });
-}
-
-function formatDateBR(dateISO: string) {
-  return new Date(`${dateISO}T12:00:00`).toLocaleDateString("pt-BR");
 }
 
 function percent(value: number, total: number) {
@@ -452,7 +449,7 @@ function TransactionList({ overview }: Props) {
                           {expense.description} {label ? `(${label})` : ""}
                         </p>
                         <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                          <span className="text-xs text-neutral-500">{formatDateBR(expense.date)}</span>
+                          <span className="text-xs text-neutral-500">{formatCivilDateBR(expense.date)}</span>
                           <span className="text-xs text-neutral-300">•</span>
                           <span className="text-xs text-neutral-500">{expense.category?.name ?? "Sem categoria"}</span>
                           <span className="text-xs text-neutral-300">•</span>

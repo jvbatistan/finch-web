@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AccountsPage from "@/app/accounts/page";
+import { todayLocalCivilDate } from "@/lib/civil-date";
 
 const push = vi.fn();
 const replace = vi.fn();
@@ -152,6 +153,28 @@ afterEach(() => {
 });
 
 describe("AccountsPage", () => {
+  it("defaults account and transfer dates to the local day at the UTC boundary", () => {
+    const originalTimeZone = process.env.TZ;
+
+    try {
+      process.env.TZ = "America/Sao_Paulo";
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-03-01T02:30:00Z"));
+      fetchAccountTransfers.mockReturnValueOnce(new Promise(() => {}));
+
+      render(<AccountsPage />);
+      fireEvent.click(screen.getByRole("button", { name: /Nova conta/i }));
+      expect(screen.getByDisplayValue("2026-02-28")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: /Cancelar/i }));
+      fireEvent.click(screen.getAllByRole("button", { name: /Transferir/i })[0]);
+      expect(screen.getByDisplayValue("2026-02-28")).toHaveAttribute("max", "2026-02-28");
+    } finally {
+      vi.useRealTimers();
+      process.env.TZ = originalTimeZone;
+    }
+  });
+
   it("renders active and archived accounts with available types", async () => {
     const user = userEvent.setup();
 
@@ -346,7 +369,7 @@ describe("AccountsPage", () => {
     fireEvent.change(screen.getByDisplayValue("Selecione a origem"), { target: { value: "1" } });
     fireEvent.change(screen.getByDisplayValue("Selecione o destino"), { target: { value: "2" } });
     await user.type(screen.getByPlaceholderText("0,00"), "200,50");
-    fireEvent.change(screen.getByDisplayValue(new Date().toISOString().slice(0, 10)), { target: { value: "2026-07-18" } });
+    fireEvent.change(screen.getByDisplayValue(todayLocalCivilDate()), { target: { value: "2026-07-18" } });
     await user.type(screen.getByPlaceholderText("Ex: Reserva do mês"), "Reserva do mês");
     await user.type(screen.getByPlaceholderText("Opcional"), "Movido para carteira");
 
@@ -400,9 +423,9 @@ describe("AccountsPage", () => {
     render(<AccountsPage />);
 
     await user.click(screen.getAllByRole("button", { name: /Transferir/i })[0]);
-    const dateInput = screen.getByDisplayValue(new Date().toISOString().slice(0, 10));
+    const dateInput = screen.getByDisplayValue(todayLocalCivilDate());
 
-    expect(dateInput).toHaveAttribute("max", new Date().toISOString().slice(0, 10));
+    expect(dateInput).toHaveAttribute("max", todayLocalCivilDate());
 
     fireEvent.change(screen.getByDisplayValue("Selecione a origem"), { target: { value: "1" } });
     fireEvent.change(screen.getByDisplayValue("Selecione o destino"), { target: { value: "2" } });

@@ -22,6 +22,7 @@ import {
   type AccountKind,
 } from "@/features/accounts";
 import { useAuth } from "@/lib/useAuth";
+import { formatCivilDateBR, todayLocalCivilDate } from "@/lib/civil-date";
 
 const accountKindOptions: Array<{ value: AccountKind; label: string }> = [
   { value: "checking", label: "Conta corrente" },
@@ -31,31 +32,31 @@ const accountKindOptions: Array<{ value: AccountKind; label: string }> = [
   { value: "other", label: "Outra" },
 ];
 
-const initialForm = {
-  name: "",
-  kind: "checking" as AccountKind,
-  initial_balance: "0",
-  initial_balance_date: new Date().toISOString().slice(0, 10),
-};
+function initialForm() {
+  return {
+    name: "",
+    kind: "checking" as AccountKind,
+    initial_balance: "0",
+    initial_balance_date: todayLocalCivilDate(),
+  };
+}
 
-const initialTransferForm = {
-  from_account_id: "",
-  to_account_id: "",
-  amount: "",
-  transferred_on: new Date().toISOString().slice(0, 10),
-  description: "",
-  note: "",
-};
+function initialTransferForm() {
+  return {
+    from_account_id: "",
+    to_account_id: "",
+    amount: "",
+    transferred_on: todayLocalCivilDate(),
+    description: "",
+    note: "",
+  };
+}
 
 function formatBRL(value: number | string) {
   return Number(value).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
-}
-
-function formatDateBR(dateISO: string) {
-  return new Date(`${dateISO}T12:00:00`).toLocaleDateString("pt-BR");
 }
 
 function kindLabel(kind: AccountKind) {
@@ -153,19 +154,19 @@ export default function AccountsPage() {
   );
 
   function resetForm() {
-    setForm(initialForm);
+    setForm(initialForm());
     setEditingAccount(null);
     setIsDialogOpen(false);
   }
 
   function resetTransferForm() {
-    setTransferForm(initialTransferForm);
+    setTransferForm(initialTransferForm());
     setIsTransferDialogOpen(false);
   }
 
   function openCreateDialog() {
     setEditingAccount(null);
-    setForm(initialForm);
+    setForm(initialForm());
     setActionError(null);
     setMessage(null);
     setIsDialogOpen(true);
@@ -174,7 +175,7 @@ export default function AccountsPage() {
   function openTransferDialog() {
     if (!canTransfer) return;
 
-    setTransferForm(initialTransferForm);
+    setTransferForm(initialTransferForm());
     setActionError(null);
     setMessage(null);
     setIsTransferDialogOpen(true);
@@ -662,7 +663,7 @@ export default function AccountsPage() {
                   <Input
                     type="date"
                     value={transferForm.transferred_on}
-                    max={new Date().toISOString().slice(0, 10)}
+                    max={todayLocalCivilDate()}
                     onChange={(event) => setTransferForm((current) => ({ ...current, transferred_on: event.target.value }))}
                     disabled={transferSubmitting}
                     className="h-11 rounded-xl"
@@ -760,7 +761,7 @@ function AccountCard({
         </div>
         <div>
           <p className="text-xs text-neutral-500">Data inicial</p>
-          <p className="mt-1 font-bold text-neutral-950">{formatDateBR(account.initial_balance_date)}</p>
+          <p className="mt-1 font-bold text-neutral-950">{formatCivilDateBR(account.initial_balance_date)}</p>
         </div>
       </div>
 
@@ -816,7 +817,7 @@ function TransferCard({
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-500">
             <span className="font-semibold tabular-nums text-neutral-900">{formatBRL(transfer.amount)}</span>
-            <span>{formatDateBR(transfer.transferred_on)}</span>
+            <span>{formatCivilDateBR(transfer.transferred_on)}</span>
             <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${completed ? "bg-emerald-50 text-emerald-700" : "bg-neutral-100 text-neutral-600"}`}>
               {completed ? "Concluída" : "Revertida"}
             </span>
@@ -850,7 +851,7 @@ function accountTransferOptions(accounts: Account[], disabledAccountId?: string)
   }));
 }
 
-function validateTransferForm(form: typeof initialTransferForm) {
+function validateTransferForm(form: ReturnType<typeof initialTransferForm>) {
   if (!form.from_account_id) return "Selecione a conta de origem.";
   if (!form.to_account_id) return "Selecione a conta de destino.";
   if (form.from_account_id === form.to_account_id) return "A conta de destino deve ser diferente da origem.";
@@ -859,7 +860,7 @@ function validateTransferForm(form: typeof initialTransferForm) {
   if (!Number.isFinite(amount) || amount <= 0) return "Informe um valor maior que zero.";
 
   if (!form.transferred_on) return "Informe a data da transferência.";
-  if (form.transferred_on > new Date().toISOString().slice(0, 10)) return "A data da transferência não pode ser futura.";
+  if (form.transferred_on > todayLocalCivilDate()) return "A data da transferência não pode ser futura.";
 
   return null;
 }
