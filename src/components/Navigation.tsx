@@ -19,6 +19,7 @@ import {
   Wallet,
   Landmark,
   CircleDollarSign,
+  ClipboardCheck,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home, enabled: true },
   { href: "/transactions", label: "Transações", icon: CreditCard, enabled: true },
   { href: "/payments", label: "Pagamentos", icon: CircleDollarSign, enabled: true },
+  { href: "/financial-hygiene", label: "Higiene financeira", icon: ClipboardCheck, enabled: true },
   { href: "/accounts", label: "Contas", icon: Landmark, enabled: true },
   { href: "/suggestions", label: "Sugestões", icon: Sparkles, enabled: true },
   { href: "/categories", label: "Categorias", icon: PieChart, enabled: true },
