@@ -147,13 +147,18 @@ describe("PaymentsPage", () => {
     render(<PaymentsPage />);
 
     await user.click(screen.getByRole("button", { name: /Registrar pagamento/i }));
+    expect(screen.getByLabelText("Data e hora do pagamento")).toHaveAttribute("type", "datetime-local");
     await user.clear(screen.getByLabelText("Valor do pagamento"));
     await user.type(screen.getByLabelText("Valor do pagamento"), "100");
     await user.selectOptions(screen.getByDisplayValue("Selecione a conta de onde saiu o dinheiro"), "3");
     await user.click(screen.getByRole("button", { name: /Registrar pagamento da fatura/i }));
 
     await waitFor(() => {
-      expect(payCardStatement).toHaveBeenCalledWith(expect.objectContaining({ id: 1, card: { id: 1, name: "NUBANK" } }), { accountId: 3, amount: 100 });
+      expect(payCardStatement).toHaveBeenCalledWith(expect.objectContaining({ id: 1, card: { id: 1, name: "NUBANK" } }), {
+        accountId: 3,
+        amount: 100,
+        paidAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
+      });
       expect(refetch).toHaveBeenCalled();
       expect(screen.getByText('Pagamento da fatura do cartão "NUBANK" registrado com sucesso.')).toBeInTheDocument();
     });

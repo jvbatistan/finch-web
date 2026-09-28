@@ -53,7 +53,12 @@ function formatBRL(value: number) {
 }
 
 function formatDateTimeBR(dateISO: string) {
-  return new Date(dateISO).toLocaleDateString("pt-BR");
+  return new Date(dateISO).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
+function currentLocalDateTimeInputValue() {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 }
 
 function periodLabel(month: string, year: string) {
@@ -88,6 +93,7 @@ export default function PaymentsPage() {
   const [confirmation, setConfirmation] = useState<PaymentConfirmation | null>(null);
   const [statementAccountId, setStatementAccountId] = useState("none");
   const [statementPaymentAmount, setStatementPaymentAmount] = useState("");
+  const [statementPaidAt, setStatementPaidAt] = useState(currentLocalDateTimeInputValue);
   const [looseAccountId, setLooseAccountId] = useState("none");
   const [looseSettledOn, setLooseSettledOn] = useState(todayLocalCivilDate);
   const [looseSettledValue, setLooseSettledValue] = useState("");
@@ -144,12 +150,12 @@ export default function PaymentsPage() {
   );
   const hasAccounts = accounts.length > 0;
 
-  async function submitPayStatement(statement: StatementReference, accountId: number, amount: number) {
+  async function submitPayStatement(statement: StatementReference, accountId: number, amount: number, paidAt: string) {
     try {
       setSubmittingKey(`statement-${statement.id ?? `${statement.card.id}-${statement.billing_statement}`}`);
       setMessage(null);
       setConfirmationError(null);
-      const result = await payCardStatement(statement, { accountId, amount });
+      const result = await payCardStatement(statement, { accountId, amount, paidAt });
       if (result.status === 401) {
         handleUnauthorized();
         return false;
@@ -258,6 +264,11 @@ export default function PaymentsPage() {
       return;
     }
 
+    if (current.kind === "statement" && Number.isNaN(new Date(statementPaidAt).getTime())) {
+      setConfirmationError("Informe a data e hora do pagamento.");
+      return;
+    }
+
     if ((current.kind === "loose-expense" || current.kind === "loose-expenses") && looseAccountId === "none") {
       setConfirmationError(looseAccountRequiredMessage);
       return;
@@ -274,7 +285,7 @@ export default function PaymentsPage() {
     }
 
     if (current.kind === "statement") {
-      if (await submitPayStatement(current.statement, Number(statementAccountId), Number(statementPaymentAmount))) {
+      if (await submitPayStatement(current.statement, Number(statementAccountId), Number(statementPaymentAmount), new Date(statementPaidAt).toISOString())) {
         setConfirmation(null);
         setStatementAccountId("none");
         setStatementPaymentAmount("");
@@ -525,6 +536,7 @@ export default function PaymentsPage() {
                                     onClick={() => {
                                       setStatementAccountId("none");
                                       setStatementPaymentAmount(String(statement.remaining_amount));
+                                      setStatementPaidAt(currentLocalDateTimeInputValue());
                                       setMessage(null);
                                       setConfirmationError(null);
                                       setConfirmation({
@@ -887,6 +899,10 @@ export default function PaymentsPage() {
                       <label htmlFor="statement-payment-amount" className="text-sm font-medium text-neutral-700">Valor do pagamento</label>
                       <input id="statement-payment-amount" type="number" min="0.01" max={confirmation.amount} step="0.01" value={statementPaymentAmount} onChange={(event) => setStatementPaymentAmount(event.target.value)} className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-3" />
                       <p className="text-xs text-neutral-500">Saldo restante: {formatBRL(confirmation.amount)}.</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label htmlFor="statement-paid-at" className="text-sm font-medium text-neutral-700">Data e hora do pagamento</label>
+                      <input id="statement-paid-at" type="datetime-local" value={statementPaidAt} onChange={(event) => setStatementPaidAt(event.target.value)} className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-3" />
                     </div>
                     <label className="text-sm font-medium text-neutral-700">Conta</label>
                     {hasAccounts ? (

@@ -25,6 +25,7 @@ export async function fetchPayments(month: number, year: number, signal?: AbortS
 type PayCardStatementPayload = {
   amount?: number;
   accountId: number;
+  paidAt: string;
 };
 
 type StatementReference = Pick<PaymentStatement, "id" | "card" | "billing_statement">;
@@ -46,6 +47,7 @@ export async function payCardStatement(statement: StatementReference, payload: P
       body: JSON.stringify({
         ...(payload.amount !== undefined ? { amount: payload.amount } : {}),
         account_id: payload.accountId,
+        paid_at: payload.paidAt,
         ...statementReferencePayload(statement),
       }),
       cache: "no-store",
