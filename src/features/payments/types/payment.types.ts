@@ -1,5 +1,5 @@
 export type PaymentStatement = {
-  id: number;
+  id: number | null;
   card: {
     id: number;
     name: string;

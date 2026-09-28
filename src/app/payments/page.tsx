@@ -78,9 +78,10 @@ function renderInstallmentLabel(transaction: {
   return `(${transaction.installment_number}/${transaction.installments_count})`;
 }
 
+type StatementReference = { id: number | null; card: { id: number; name: string }; billing_statement: string };
 type PaymentConfirmation =
-  | { kind: "statement"; statementId: number; cardName: string; amount: number }
-  | { kind: "ignore-statement"; statementId: number; cardName: string; amount: number; period: string }
+  | { kind: "statement"; statement: StatementReference; amount: number }
+  | { kind: "ignore-statement"; statement: StatementReference; amount: number; period: string }
   | { kind: "loose-expense"; transactionId: number; description: string; amount: number; paymentsTotal: number; remainingAmount: number }
   | { kind: "ignore-loose-expense"; transactionId: number; description: string; amount: number; period: string }
   | { kind: "loose-expenses"; count: number; totalAmount: number; period: string };
@@ -152,12 +153,12 @@ export default function PaymentsPage() {
   );
   const hasAccounts = accounts.length > 0;
 
-  async function submitPayStatement(statementId: number, accountId: number, amount: number) {
+  async function submitPayStatement(statement: StatementReference, accountId: number, amount: number) {
     try {
-      setSubmittingKey(`statement-${statementId}`);
+      setSubmittingKey(`statement-${statement.id ?? `${statement.card.id}-${statement.billing_statement}`}`);
       setMessage(null);
       setConfirmationError(null);
-      const result = await payCardStatement(statementId, { accountId, amount });
+      const result = await payCardStatement(statement, { accountId, amount });
       if (result.status === 401) {
         handleUnauthorized();
         return false;
@@ -173,16 +174,16 @@ export default function PaymentsPage() {
     }
   }
 
-  async function submitIgnoreStatement(statementId: number, cardName: string) {
+  async function submitIgnoreStatement(statement: StatementReference) {
     try {
-      setSubmittingKey(`ignore-statement-${statementId}`);
+      setSubmittingKey(`ignore-statement-${statement.id ?? `${statement.card.id}-${statement.billing_statement}`}`);
       setMessage(null);
-      const result = await ignoreCardStatement(statementId, Number(month), Number(year));
+      const result = await ignoreCardStatement(statement, Number(month), Number(year));
       if (result.status === 401) {
         handleUnauthorized();
         return;
       }
-      setMessage(`Fatura do cartão "${cardName}" removida do fluxo de pagamento de ${periodLabel(month, year)}.`);
+      setMessage(`Fatura do cartão "${statement.card.name}" removida do fluxo de pagamento de ${periodLabel(month, year)}.`);
       await refetch();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Não foi possível remover a fatura do fluxo de pagamento.");
@@ -282,7 +283,7 @@ export default function PaymentsPage() {
     }
 
     if (current.kind === "statement") {
-      if (await submitPayStatement(current.statementId, Number(statementAccountId), Number(statementPaymentAmount))) {
+      if (await submitPayStatement(current.statement, Number(statementAccountId), Number(statementPaymentAmount))) {
         setConfirmation(null);
         setStatementAccountId("none");
         setStatementPaymentAmount("");
@@ -291,7 +292,7 @@ export default function PaymentsPage() {
     }
 
     if (current.kind === "ignore-statement") {
-      await submitIgnoreStatement(current.statementId, current.cardName);
+      await submitIgnoreStatement(current.statement);
       return;
     }
 
@@ -537,8 +538,7 @@ export default function PaymentsPage() {
                                       setConfirmationError(null);
                                       setConfirmation({
                                         kind: "statement",
-                                        statementId: statement.id,
-                                        cardName: statement.card.name,
+                                        statement,
                                         amount: Number(statement.remaining_amount),
                                       });
                                     }}
@@ -551,8 +551,7 @@ export default function PaymentsPage() {
                                     variant="outline"
                                     onClick={() => setConfirmation({
                                       kind: "ignore-statement",
-                                      statementId: statement.id,
-                                      cardName: statement.card.name,
+                                      statement,
                                       amount: Number(statement.remaining_amount),
                                       period: periodLabel(month, year),
                                     })}
@@ -853,9 +852,9 @@ export default function PaymentsPage() {
                     </h2>
                     <p className="mt-1 text-sm text-neutral-500">
                       {confirmation.kind === "statement"
-                        ? `Informe o valor para registrar o pagamento da fatura do cartão ${confirmation.cardName}.`
+                        ? `Informe o valor para registrar o pagamento da fatura do cartão ${confirmation.statement.card.name}.`
                         : confirmation.kind === "ignore-statement"
-                          ? `Você está prestes a retirar a fatura do cartão ${confirmation.cardName} do fluxo de pagamento de ${confirmation.period}. Ela deixará de compor os totais desse período sem ser marcada como paga.`
+                          ? `Você está prestes a retirar a fatura do cartão ${confirmation.statement.card.name} do fluxo de pagamento de ${confirmation.period}. Ela deixará de compor os totais desse período sem ser marcada como paga.`
                           : confirmation.kind === "loose-expense"
                             ? `Você está prestes a marcar a despesa ${confirmation.description} como paga no valor de ${formatBRL(confirmation.amount)}.`
                             : confirmation.kind === "ignore-loose-expense"

@@ -153,7 +153,7 @@ describe("PaymentsPage", () => {
     await user.click(screen.getByRole("button", { name: /Registrar pagamento da fatura/i }));
 
     await waitFor(() => {
-      expect(payCardStatement).toHaveBeenCalledWith(1, { accountId: 3, amount: 100 });
+      expect(payCardStatement).toHaveBeenCalledWith(expect.objectContaining({ id: 1, card: { id: 1, name: "NUBANK" } }), { accountId: 3, amount: 100 });
       expect(refetch).toHaveBeenCalled();
       expect(screen.getByText('Pagamento da fatura do cartão "NUBANK" registrado com sucesso.')).toBeInTheDocument();
     });
@@ -307,7 +307,7 @@ describe("PaymentsPage", () => {
     await user.click(screen.getByRole("button", { name: /Confirmar não pagamento/i }));
 
     await waitFor(() => {
-      expect(ignoreCardStatement).toHaveBeenCalledWith(1, expect.any(Number), expect.any(Number));
+    expect(ignoreCardStatement).toHaveBeenCalledWith(expect.objectContaining({ id: 1, card: { id: 1, name: "NUBANK" } }), expect.any(Number), expect.any(Number));
       expect(refetch).toHaveBeenCalled();
       expect(screen.getByText(/removida do fluxo de pagamento/i)).toBeInTheDocument();
     });

@@ -27,13 +27,26 @@ type PayCardStatementPayload = {
   accountId: number;
 };
 
-export async function payCardStatement(statementId: number, payload: PayCardStatementPayload) {
+type StatementReference = Pick<PaymentStatement, "id" | "card" | "billing_statement">;
+
+function statementActionUrl(statement: StatementReference, action: "pay" | "ignore") {
+  return statement.id
+    ? `/api/payments/card_statements/${statement.id}/${action}`
+    : `/api/payments/card_statements/${action}`;
+}
+
+function statementReferencePayload(statement: StatementReference) {
+  return statement.id ? {} : { card_id: statement.card.id, billing_statement: statement.billing_statement };
+}
+
+export async function payCardStatement(statement: StatementReference, payload: PayCardStatementPayload) {
   try {
-    const data = (await api(`/api/payments/card_statements/${statementId}/pay`, {
+    const data = (await api(statementActionUrl(statement, "pay"), {
       method: "POST",
       body: JSON.stringify({
         ...(payload.amount !== undefined ? { amount: payload.amount } : {}),
         account_id: payload.accountId,
+        ...statementReferencePayload(statement),
       }),
       cache: "no-store",
     })) as PaymentStatement;
@@ -98,11 +111,11 @@ export async function ignoreLooseExpense(transactionId: number, month: number, y
   }
 }
 
-export async function ignoreCardStatement(statementId: number, month: number, year: number) {
+export async function ignoreCardStatement(statement: StatementReference, month: number, year: number) {
   try {
-    const data = (await api(`/api/payments/card_statements/${statementId}/ignore`, {
+    const data = (await api(statementActionUrl(statement, "ignore"), {
       method: "POST",
-      body: JSON.stringify({ month, year }),
+      body: JSON.stringify({ month, year, ...statementReferencePayload(statement) }),
       cache: "no-store",
     })) as PaymentStatement;
 
