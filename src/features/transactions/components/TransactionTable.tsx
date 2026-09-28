@@ -237,7 +237,7 @@ export function TransactionTable({
 
                       <div className="min-w-0">
                         <p className="font-medium text-neutral-900">
-                          {t.description} {installmentLabel}
+                          {t.friendly_title || t.description} {installmentLabel}
                         </p>
                         <p className="mt-1 text-xs text-neutral-500">{formatDateBR(t.date)}</p>
                       </div>
@@ -344,7 +344,7 @@ export function TransactionTable({
 
                         <div>
                           <div className="font-medium text-neutral-900">
-                            {t.description} {installmentLabel}
+                            {t.friendly_title || t.description} {installmentLabel}
                           </div>
                           <div className="mt-0.5 text-xs text-neutral-500">{t.note}</div>
                         </div>

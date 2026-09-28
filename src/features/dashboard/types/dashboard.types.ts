@@ -26,6 +26,7 @@ export type DashboardCategoryTotal = {
 export type DashboardRecentExpense = {
   id: number;
   description: string;
+  friendly_title?: string | null;
   value: number;
   signed_value?: number;
   refund?: boolean;

@@ -72,7 +72,8 @@ export function TransactionDetailsDialog({ transaction, onClose }: TransactionDe
           </div>
 
           <dl className="max-h-[calc(100vh-12rem)] overflow-y-auto px-5 py-3 sm:px-6">
-            <DetailRow label="Descrição" value={transaction.description} />
+            <DetailRow label="Título amigável" value={transaction.friendly_title || transaction.description} />
+            {transaction.friendly_title && <DetailRow label="Descrição original" value={transaction.description} />}
             <DetailRow label="Categoria" value={transaction.category?.name ?? "Sem categoria"} />
             <DetailRow label="Origem" value={sourceLabel(transaction.source)} />
             {transaction.account && <DetailRow label="Account" value={transaction.account.name} />}

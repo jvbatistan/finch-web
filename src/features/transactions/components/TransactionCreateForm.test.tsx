@@ -33,6 +33,7 @@ describe("TransactionCreateForm", () => {
     );
 
     await user.type(screen.getByPlaceholderText("Ex: Compra no supermercado"), "Uber Trip");
+    await user.type(screen.getByPlaceholderText("Ex: Presente da Maria"), "Corrida para o aeroporto");
 
     const amountInput = screen.getByPlaceholderText("0,00");
     await user.type(amountInput, "1234");
@@ -54,6 +55,7 @@ describe("TransactionCreateForm", () => {
       expect(onSubmit).toHaveBeenCalledWith(
         expect.objectContaining({
           description: "Uber Trip",
+          friendly_title: "Corrida para o aeroporto",
           value: 12.34,
           source: "card",
           card_id: 7,

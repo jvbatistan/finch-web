@@ -67,6 +67,7 @@ function buildFormState(initialTransaction?: Transaction | null) {
   return {
     kind: initialTransaction?.kind ?? ("expense" as const),
     description: initialTransaction?.description ?? "",
+    friendlyTitle: initialTransaction?.friendly_title ?? "",
     value: toCurrencyInput(initialTransaction?.value),
     refund: initialTransaction?.refund ?? false,
     date: initialTransaction?.date ?? localDateISO(),
@@ -102,6 +103,7 @@ function TransactionCreateFormFields({
   const initialState = useMemo(() => buildFormState(initialTransaction), [initialTransaction]);
   const [kind, setKind] = useState<"expense" | "income">(initialState.kind);
   const [description, setDescription] = useState(initialState.description);
+  const [friendlyTitle, setFriendlyTitle] = useState(initialState.friendlyTitle);
   const [value, setValue] = useState(initialState.value);
   const [refund, setRefund] = useState(initialState.refund);
   const [date, setDate] = useState(initialState.date);
@@ -195,6 +197,7 @@ function TransactionCreateFormFields({
 
     await onSubmit({
       description: normalizedDescription,
+      friendly_title: friendlyTitle.trim() || null,
       value: normalizedValue,
       refund: !isIncome && effectiveSource === "card" ? refund : false,
       date,
@@ -214,6 +217,7 @@ function TransactionCreateFormFields({
       const nextState = buildFormState(null);
       setKind(nextState.kind);
       setDescription(nextState.description);
+      setFriendlyTitle(nextState.friendlyTitle);
       setValue(nextState.value);
       setRefund(nextState.refund);
       setDate(nextState.date);
@@ -278,7 +282,7 @@ function TransactionCreateFormFields({
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <FieldLabel>Descrição</FieldLabel>
+            <FieldLabel>Descrição original</FieldLabel>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -286,6 +290,12 @@ function TransactionCreateFormFields({
               disabled={loading}
               className="h-11 rounded-xl bg-white"
             />
+            <p className="text-xs text-neutral-500">Texto do estabelecimento, cartão ou banco.</p>
+          </div>
+          <div className="space-y-2">
+            <FieldLabel>Título amigável (opcional)</FieldLabel>
+            <Input value={friendlyTitle} onChange={(e) => setFriendlyTitle(e.target.value)} placeholder="Ex: Presente da Maria" />
+            <p className="text-xs text-neutral-500">Nome pessoal para reconhecer este lançamento. Não altera a descrição original.</p>
           </div>
 
           <div className="space-y-2">

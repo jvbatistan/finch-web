@@ -657,7 +657,7 @@ export default function PaymentsPage() {
                           >
                             <div className="flex-1">
                               <div className="font-medium text-neutral-900">
-                                {transaction.description} {installmentLabel}
+                                {transaction.friendly_title || transaction.description} {installmentLabel}
                               </div>
                               {transaction.note && (
                                 <div className="mt-1 text-xs text-neutral-500">{transaction.note}</div>
@@ -686,7 +686,7 @@ export default function PaymentsPage() {
                                     setConfirmation({
                                       kind: "loose-expense",
                                       transactionId: transaction.id,
-                                      description: transaction.description,
+                                      description: transaction.friendly_title || transaction.description,
                                       amount: Number(transaction.value),
                                       paymentsTotal: Number(transaction.payments_total ?? 0),
                                       remainingAmount: Number(transaction.remaining_amount ?? transaction.value),
@@ -703,7 +703,7 @@ export default function PaymentsPage() {
                                   onClick={() => setConfirmation({
                                     kind: "ignore-loose-expense",
                                     transactionId: transaction.id,
-                                    description: transaction.description,
+                                    description: transaction.friendly_title || transaction.description,
                                     amount: Number(transaction.value),
                                     period: periodLabel(month, year),
                                   })}
@@ -813,7 +813,7 @@ export default function PaymentsPage() {
                               >
                                 <div>
                                   <div className="font-medium text-neutral-900">
-                                    {transaction.description} {installmentLabel}
+                                    {transaction.friendly_title || transaction.description} {installmentLabel}
                                   </div>
                                   {transaction.note && (
                                     <div className="mt-1 text-xs text-neutral-500">{transaction.note}</div>

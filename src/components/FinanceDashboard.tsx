@@ -160,7 +160,7 @@ export function FinanceDashboard({ overview }: FinanceDashboardProps) {
                     <div key={expense.id} className="flex flex-col gap-2 rounded-2xl border border-neutral-200 p-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
                         <p className="font-medium text-neutral-900">
-                          {expense.description} {label ? `(${label})` : ""}
+                          {expense.friendly_title || expense.description} {label ? `(${label})` : ""}
                         </p>
                         <p className="mt-1 text-sm text-neutral-500">
                           {formatCivilDateBR(expense.date)}

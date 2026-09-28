@@ -34,6 +34,7 @@ export type CardStatementPayment = {
 export type LooseExpenseTransaction = {
   id: number;
   description: string;
+  friendly_title?: string | null;
   value: number;
   signed_value?: number;
   refund?: boolean;

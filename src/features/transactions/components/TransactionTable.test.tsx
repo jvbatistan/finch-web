@@ -44,6 +44,17 @@ describe("TransactionTable", () => {
     expect(screen.getAllByText("Sugestão pendente").length).toBeGreaterThan(0);
   });
 
+  it("prefers the friendly title when one is available", () => {
+    render(
+      <TransactionTable
+        items={[{ ...baseTransaction, friendly_title: "Corrida para o aeroporto" }]}
+        loading={false}
+      />
+    );
+
+    expect(screen.getAllByText("Corrida para o aeroporto").length).toBeGreaterThan(0);
+  });
+
   it("shows the review action and calls the callback for pending transactions", async () => {
     const user = userEvent.setup();
     const onReviewClassification = vi.fn();

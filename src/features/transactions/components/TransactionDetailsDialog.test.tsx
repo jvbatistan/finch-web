@@ -23,7 +23,7 @@ describe("TransactionDetailsDialog", () => {
   it("shows origin, obligation, settlement and the negative payment difference without rewriting values", () => {
     render(<TransactionDetailsDialog transaction={transaction} onClose={vi.fn()} />);
 
-    expect(screen.getByText("Descrição").parentElement).toHaveTextContent("INTERNET");
+    expect(screen.getByText("Título amigável").parentElement).toHaveTextContent("INTERNET");
     expect(screen.getByText("Origem").parentElement).toHaveTextContent("Conta bancária");
     expect(screen.getByText("Account").parentElement).toHaveTextContent("Conta Corrente");
     expect(screen.getByText("Data original da compra").parentElement).toHaveTextContent("10/08/2026");
@@ -33,6 +33,18 @@ describe("TransactionDetailsDialog", () => {
     expect(screen.getByText("Valor devido").parentElement).toHaveTextContent(/R\$\s*150,00/);
     expect(screen.getByText("Valor efetivamente pago").parentElement).toHaveTextContent(/R\$\s*149,26/);
     expect(screen.getByText("Diferença no pagamento").parentElement).toHaveTextContent(/-R\$\s*0,74 — Menor que o valor devido/);
+  });
+
+  it("shows both titles when a friendly title is available", () => {
+    render(
+      <TransactionDetailsDialog
+        transaction={{ ...transaction, friendly_title: "Internet de casa" }}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Título amigável").parentElement).toHaveTextContent("Internet de casa");
+    expect(screen.getByText("Descrição original").parentElement).toHaveTextContent("INTERNET");
   });
 
   it.each([

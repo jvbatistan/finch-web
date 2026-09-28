@@ -21,6 +21,7 @@ export type TransactionClassification = {
 export type Transaction = {
   id: number;
   description: string;
+  friendly_title?: string | null;
   value: number;
   original_value?: number | null;
   signed_value?: number;
@@ -67,6 +68,7 @@ export type TransactionsPage = {
 
 export type TransactionPayload = {
   description: string;
+  friendly_title?: string | null;
   value: number;
   original_value?: number | null;
   refund?: boolean;

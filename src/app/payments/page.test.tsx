@@ -105,7 +105,7 @@ beforeEach(() => {
         total_amount: 120,
         paid: false,
         transactions: [
-          { id: 1, description: "MERCADO", value: 80, date: "2026-03-10", source: "cash", paid: false },
+          { id: 1, description: "MERCADO", friendly_title: "Compras da semana", value: 80, date: "2026-03-10", source: "cash", paid: false },
           { id: 2, description: "UBER", value: 40, date: "2026-03-11", source: "bank", paid: false },
         ],
       },
@@ -369,7 +369,7 @@ describe("PaymentsPage", () => {
     await waitFor(() => {
       expect(payLooseExpense).toHaveBeenCalledWith(1, expect.any(Number), expect.any(Number), 3, expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), 80, false);
       expect(refetch).toHaveBeenCalled();
-      expect(screen.getByText('Pagamento parcial da despesa "MERCADO" registrado.')).toBeInTheDocument();
+      expect(screen.getByText('Pagamento parcial da despesa "Compras da semana" registrado.')).toBeInTheDocument();
     });
   });
 
@@ -384,7 +384,7 @@ describe("PaymentsPage", () => {
     await waitFor(() => {
       expect(ignoreLooseExpense).toHaveBeenCalledWith(1, expect.any(Number), expect.any(Number));
       expect(refetch).toHaveBeenCalled();
-      expect(screen.getByText(/Despesa "MERCADO" removida do fluxo de pagamento/i)).toBeInTheDocument();
+      expect(screen.getByText(/Despesa "Compras da semana" removida do fluxo de pagamento/i)).toBeInTheDocument();
     });
   });
 

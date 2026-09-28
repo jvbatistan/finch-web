@@ -70,6 +70,7 @@ const dashboardOverview = {
     {
       id: 1,
       description: "MERCADO",
+      friendly_title: "Compras da semana",
       value: 80,
       date: "2026-04-10",
       paid: false,
@@ -122,6 +123,7 @@ describe("DashboardPage", () => {
     expect(screen.getByText("Receitas vs despesas")).toBeInTheDocument();
     expect(screen.getByText("Despesas por categoria")).toBeInTheDocument();
     expect(screen.getByText("Últimas despesas cadastradas")).toBeInTheDocument();
+    expect(screen.getByText("Compras da semana")).toBeInTheDocument();
     expect(screen.getByText("Faturas e cartões")).toBeInTheDocument();
     expect(screen.getByText("Status das despesas")).toBeInTheDocument();
     expect(screen.queryByText("Em construção")).not.toBeInTheDocument();

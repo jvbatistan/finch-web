@@ -446,7 +446,7 @@ function TransactionList({ overview }: Props) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold text-neutral-950">
-                          {expense.description} {label ? `(${label})` : ""}
+                          {expense.friendly_title || expense.description} {label ? `(${label})` : ""}
                         </p>
                         <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                           <span className="text-xs text-neutral-500">{formatCivilDateBR(expense.date)}</span>
