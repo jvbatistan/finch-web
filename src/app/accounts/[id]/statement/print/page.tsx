@@ -15,6 +15,7 @@ import {
   type StatementMovementType,
 } from "@/features/accounts";
 import { useAuth } from "@/lib/useAuth";
+import { formatCivilDateBR } from "@/lib/civil-date";
 
 type PrintFilters = {
   startDate: string;
@@ -63,7 +64,7 @@ function formatBRL(value: string) {
 }
 
 function formatDate(date: string | null | undefined) {
-  return date ? new Date(`${date}T12:00:00`).toLocaleDateString("pt-BR") : "Não informado";
+  return date ? formatCivilDateBR(date) : "Não informado";
 }
 
 function formatPeriod(startDate: string | null, endDate: string | null) {

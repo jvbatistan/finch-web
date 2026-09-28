@@ -20,6 +20,7 @@ import { Select, SelectTriggerHTML } from "@/components/ui/select";
 import { useAccounts } from "@/features/accounts";
 import { ignoreCardStatement, ignoreLooseExpense, payCardStatement, payLooseExpense, payLooseExpenses, usePayments } from "@/features/payments";
 import { getCardBrandPresentation } from "@/lib/cardBrand";
+import { formatCivilDateBR, todayLocalCivilDate } from "@/lib/civil-date";
 import { useAuth } from "@/lib/useAuth";
 
 const monthOptions = [
@@ -51,10 +52,6 @@ function formatBRL(value: number) {
   });
 }
 
-function formatDateBR(dateISO: string) {
-  return new Date(`${dateISO}T12:00:00`).toLocaleDateString("pt-BR");
-}
-
 function formatDateTimeBR(dateISO: string) {
   return new Date(dateISO).toLocaleDateString("pt-BR");
 }
@@ -62,13 +59,6 @@ function formatDateTimeBR(dateISO: string) {
 function periodLabel(month: string, year: string) {
   const monthLabel = monthOptions.find((option) => option.value === month)?.label ?? month;
   return `${monthLabel}/${year}`;
-}
-
-function localDateISO() {
-  const today = new Date();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-  return `${today.getFullYear()}-${month}-${day}`;
 }
 
 function renderInstallmentLabel(transaction: {
@@ -99,7 +89,7 @@ export default function PaymentsPage() {
   const [statementAccountId, setStatementAccountId] = useState("none");
   const [statementPaymentAmount, setStatementPaymentAmount] = useState("");
   const [looseAccountId, setLooseAccountId] = useState("none");
-  const [looseSettledOn, setLooseSettledOn] = useState(localDateISO);
+  const [looseSettledOn, setLooseSettledOn] = useState(todayLocalCivilDate);
   const [looseSettledValue, setLooseSettledValue] = useState("");
   const [looseSettle, setLooseSettle] = useState(false);
   const [confirmationError, setConfirmationError] = useState<string | null>(null);
@@ -612,7 +602,7 @@ export default function PaymentsPage() {
                             variant="outline"
                             onClick={() => {
                               setLooseAccountId("none");
-                              setLooseSettledOn(localDateISO());
+                              setLooseSettledOn(todayLocalCivilDate());
                               setLooseSettledValue("");
                               setConfirmationError(null);
                               setConfirmation({
@@ -664,20 +654,20 @@ export default function PaymentsPage() {
                                 <div className="mt-1 text-xs font-medium text-amber-700">Parcialmente paga · Pago {formatBRL(Number(transaction.payments_total ?? 0))} · Saldo {formatBRL(Number(transaction.remaining_amount ?? transaction.value))}</div>
                               )}
                               {(transaction.payments?.length ?? 0) > 0 && (
-                                <div className="mt-1 space-y-1 text-xs text-neutral-500">{transaction.payments?.map((payment) => <div key={payment.id}>{formatDateBR(payment.settled_on)} · {payment.account.name} · {formatBRL(payment.amount)}</div>)}</div>
+                                <div className="mt-1 space-y-1 text-xs text-neutral-500">{transaction.payments?.map((payment) => <div key={payment.id}>{formatCivilDateBR(payment.settled_on)} · {payment.account.name} · {formatBRL(payment.amount)}</div>)}</div>
                               )}
                             </div>
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                               <div className="text-right">
                                 <div className="text-lg font-bold text-neutral-900">{formatBRL(transaction.value)}</div>
-                                <div className="mt-1 text-sm text-neutral-500">{formatDateBR(transaction.date)}</div>
+                                <div className="mt-1 text-sm text-neutral-500">{formatCivilDateBR(transaction.date)}</div>
                               </div>
                               <div className="flex flex-col gap-2 sm:w-[132px]">
                                 <Button
                                   size="sm"
                                   onClick={() => {
                                     setLooseAccountId(transaction.account?.id ? String(transaction.account.id) : "none");
-                                    setLooseSettledOn(localDateISO());
+                                    setLooseSettledOn(todayLocalCivilDate());
                                     setLooseSettledValue(String(transaction.remaining_amount ?? transaction.value));
                                     setLooseSettle(false);
                                     setConfirmationError(null);
@@ -819,7 +809,7 @@ export default function PaymentsPage() {
                                 </div>
                                 <div className="text-right">
                                   <div className="text-lg font-bold text-neutral-900">{formatBRL(transaction.value)}</div>
-                                  <div className="mt-1 text-sm text-neutral-500">{formatDateBR(transaction.date)}</div>
+                                  <div className="mt-1 text-sm text-neutral-500">{formatCivilDateBR(transaction.date)}</div>
                                 </div>
                               </div>
                             );

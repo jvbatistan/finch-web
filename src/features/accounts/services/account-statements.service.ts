@@ -1,5 +1,6 @@
 import type { AccountStatementResponse, FetchAccountStatementParams } from "@/features/accounts/types/account-statement.types";
 import { api } from "@/lib/api";
+import { todayLocalCivilDate } from "@/lib/civil-date";
 
 function buildStatementQuery(params: FetchAccountStatementParams, includePagination: boolean) {
   const searchParams = new URLSearchParams();
@@ -79,7 +80,7 @@ export async function exportAccountStatementCsv(accountId: number, params: Fetch
     const blob = await response.blob();
     const filename =
       filenameFromContentDisposition(response.headers.get("content-disposition")) ??
-      `finch-extrato-conta-${new Date().toISOString().slice(0, 10)}.csv`;
+      `finch-extrato-conta-${todayLocalCivilDate()}.csv`;
 
     return { status: 200 as const, data: { blob, filename } };
   } catch (err) {

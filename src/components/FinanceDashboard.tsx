@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import type { DashboardOverview } from "@/features/dashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCivilDateBR } from "@/lib/civil-date";
 
 type FinanceDashboardProps = {
   overview: DashboardOverview;
@@ -24,10 +25,6 @@ function formatBRL(value: number) {
     style: "currency",
     currency: "BRL",
   });
-}
-
-function formatDateBR(dateISO: string) {
-  return new Date(`${dateISO}T12:00:00`).toLocaleDateString("pt-BR");
 }
 
 function installmentLabel(expense: DashboardOverview["recent_expenses"][number]) {
@@ -166,7 +163,7 @@ export function FinanceDashboard({ overview }: FinanceDashboardProps) {
                           {expense.description} {label ? `(${label})` : ""}
                         </p>
                         <p className="mt-1 text-sm text-neutral-500">
-                          {formatDateBR(expense.date)}
+                          {formatCivilDateBR(expense.date)}
                           {expense.category?.name ? ` · ${expense.category.name}` : " · Sem categoria"}
                           {expense.card?.name ? ` · ${expense.card.name}` : " · Sem cartão"}
                         </p>

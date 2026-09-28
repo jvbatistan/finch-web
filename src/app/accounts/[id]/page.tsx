@@ -23,6 +23,7 @@ import {
   type StatementMovementType,
 } from "@/features/accounts";
 import { useAuth } from "@/lib/useAuth";
+import { formatCivilDateBR } from "@/lib/civil-date";
 
 const accountKindLabels: Record<AccountKind, string> = {
   checking: "Conta corrente",
@@ -62,7 +63,7 @@ function formatSignedBRL(value: number | string, direction: StatementDirection) 
 function formatDateBR(dateISO: string | null | undefined) {
   if (!dateISO) return "Sem data";
 
-  return new Date(`${dateISO}T12:00:00`).toLocaleDateString("pt-BR");
+  return formatCivilDateBR(dateISO);
 }
 
 function kindLabel(kind: AccountKind) {
