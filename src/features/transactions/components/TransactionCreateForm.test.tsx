@@ -100,6 +100,31 @@ describe("TransactionCreateForm", () => {
     });
   });
 
+  it("shows card selection only for card source and clears it when leaving card", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+    render(<TransactionCreateForm cards={[{ id: 7, name: "Nubank" }]} onSubmit={onSubmit} />);
+
+    expect(screen.queryByDisplayValue("Selecione um cartão")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByDisplayValue("Dinheiro"), { target: { value: "card" } });
+    fireEvent.change(screen.getByDisplayValue("Selecione um cartão"), { target: { value: "7" } });
+    fireEvent.change(screen.getByDisplayValue("Cartão"), { target: { value: "bank" } });
+
+    expect(screen.queryByDisplayValue("Nubank")).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue("Selecione um cartão")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByDisplayValue("Banco"), { target: { value: "card" } });
+    expect(screen.getByDisplayValue("Selecione um cartão")).toBeInTheDocument();
+    fireEvent.change(screen.getByDisplayValue("Cartão"), { target: { value: "bank" } });
+
+    await user.type(screen.getByPlaceholderText("Ex: Compra no supermercado"), "Pix mercado");
+    await user.type(screen.getByPlaceholderText("0,00"), "1000");
+    await user.click(screen.getByRole("button", { name: "Salvar despesa" }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ source: "bank", card_id: null })));
+  });
+
   it("allows an unpaid cash or bank expense without an account", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
@@ -379,5 +404,30 @@ describe("TransactionCreateForm", () => {
         })
       );
     });
+  });
+
+  it("clears the existing card when an edited expense changes to cash", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const transaction: Transaction = {
+      id: 16,
+      description: "COMPRA",
+      value: 20,
+      date: "2026-03-18",
+      kind: "expense",
+      source: "card",
+      paid: false,
+      card: { id: 7, name: "Nubank" },
+      category: null,
+      classification: null,
+    };
+
+    render(<TransactionCreateForm mode="edit" initialTransaction={transaction} cards={[{ id: 7, name: "Nubank" }]} onSubmit={onSubmit} />);
+
+    fireEvent.change(screen.getByDisplayValue("Cartão"), { target: { value: "cash" } });
+    expect(screen.queryByDisplayValue("Nubank")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ source: "cash", card_id: null })));
   });
 });

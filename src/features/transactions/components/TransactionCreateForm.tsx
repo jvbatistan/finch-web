@@ -332,7 +332,10 @@ function TransactionCreateFormFields({
               onValueChange={(value) => {
                 const nextSource = value as "cash" | "card" | "bank";
                 setSource(nextSource);
-                if (nextSource !== "card") setRefund(false);
+                if (nextSource !== "card") {
+                  setCardId("none");
+                  setRefund(false);
+                }
                 if (nextSource === "card") setAccountId("none");
               }}
             >
@@ -340,14 +343,14 @@ function TransactionCreateFormFields({
             </Select>
           </div>
 
-          {!isIncome && (
+          {!isIncome && source === "card" && (
             <div className="space-y-2">
               <FieldLabel>Cartão</FieldLabel>
               <Select value={cardId} onValueChange={setCardId}>
                 <SelectTriggerHTML
                   placeholder="Selecione um cartão"
                   options={cardOptions}
-                  className={["h-11 rounded-xl bg-white", source !== "card" ? "opacity-60" : ""].join(" ")}
+                  className="h-11 rounded-xl bg-white"
                 />
               </Select>
             </div>
