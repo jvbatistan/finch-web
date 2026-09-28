@@ -170,6 +170,28 @@ describe("PaymentsPage", () => {
     expect(payCardStatement).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { action: /Pagar despesa/i, confirm: /Confirmar pagamento da despesa/i, payment: payLooseExpense },
+    { action: /Pagar todas as despesas/i, confirm: /Confirmar pagamento em lote/i, payment: payLooseExpenses },
+  ])("shows the account error inside the modal before $confirm", async ({ action, confirm, payment }) => {
+    const user = userEvent.setup();
+    render(<PaymentsPage />);
+
+    await user.click(screen.getByRole("button", { name: /Avulsas/i }));
+    await user.click(screen.getAllByRole("button", { name: action })[0]);
+    await user.click(screen.getByRole("button", { name: confirm }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Selecione a conta usada no pagamento da despesa.");
+    expect(screen.getByLabelText("Conta do pagamento")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: confirm })).toBeEnabled();
+    expect(payment).not.toHaveBeenCalled();
+    expect(refetch).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Pagamento parcial da despesa .* registrado/)).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Conta do pagamento"), "3");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("shows a friendly API error when statement payment fails", async () => {
     const user = userEvent.setup();
     payCardStatement.mockRejectedValue(new Error("Conta não encontrada."));

@@ -38,6 +38,7 @@ const monthOptions = [
 ];
 
 const currentYear = new Date().getFullYear();
+const looseAccountRequiredMessage = "Selecione a conta usada no pagamento da despesa.";
 const yearOptions = Array.from({ length: 5 }, (_, index) => currentYear - 2 + index).map((year) => ({
   value: String(year),
   label: String(year),
@@ -268,7 +269,7 @@ export default function PaymentsPage() {
     }
 
     if ((current.kind === "loose-expense" || current.kind === "loose-expenses") && looseAccountId === "none") {
-      setConfirmationError("Selecione a conta usada no pagamento da despesa.");
+      setConfirmationError(looseAccountRequiredMessage);
       return;
     }
 
@@ -884,7 +885,7 @@ export default function PaymentsPage() {
                   Essa ação altera o status de pagamento e deve ser confirmada com atenção.
                 </div>
 
-                {confirmationError && (
+                {confirmationError && confirmationError !== looseAccountRequiredMessage && (
                   <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                     {confirmationError}
                   </p>
@@ -924,24 +925,36 @@ export default function PaymentsPage() {
 
                 {(confirmation.kind === "loose-expense" || confirmation.kind === "loose-expenses") && (
                   <div className="mt-4 space-y-2">
-                    <label className="text-sm font-medium text-neutral-700">Conta do pagamento</label>
                     {hasAccounts ? (
-                      <Select value={looseAccountId} onValueChange={setLooseAccountId}>
-                        <SelectTriggerHTML
-                          placeholder="Selecione a conta de onde saiu o dinheiro"
-                          options={accountOptions}
-                          className="h-11 rounded-xl bg-white"
-                        />
-                      </Select>
+                      <label className="block space-y-2 text-sm font-medium text-neutral-700">
+                        <span>Conta do pagamento</span>
+                        <Select value={looseAccountId} onValueChange={(value) => {
+                          setLooseAccountId(value);
+                          if (confirmationError === looseAccountRequiredMessage) setConfirmationError(null);
+                        }}>
+                          <SelectTriggerHTML
+                            placeholder="Selecione a conta de onde saiu o dinheiro"
+                            options={accountOptions}
+                            className="h-11 rounded-xl bg-white"
+                          />
+                        </Select>
+                      </label>
                     ) : accountsLoading ? (
-                      <p className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">Carregando contas...</p>
+                      <div>
+                        <span className="text-sm font-medium text-neutral-700">Conta do pagamento</span>
+                        <p className="mt-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">Carregando contas...</p>
+                      </div>
                     ) : (
                       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        <span className="font-medium">Conta do pagamento</span>
                         <p>Nenhuma conta cadastrada. Crie uma conta antes de pagar despesas.</p>
                         <Link href="/accounts" className="mt-2 inline-flex font-medium text-amber-900 underline underline-offset-4">
                           Criar conta
                         </Link>
                       </div>
+                    )}
+                    {confirmationError === looseAccountRequiredMessage && (
+                      <p role="alert" className="text-sm text-rose-700">{confirmationError}</p>
                     )}
                     <p className="text-xs text-neutral-500">A despesa só reduzirá o saldo e entrará no extrato depois deste pagamento.</p>
                     <div className="grid gap-3 sm:grid-cols-2">
