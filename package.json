@@ -12,7 +12,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e:preflight": "node --test scripts/e2e/financial-smoke.node-test.mjs",
+    "test:e2e:financial": "node scripts/e2e/financial-smoke.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.563.0",
