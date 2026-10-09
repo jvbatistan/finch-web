@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 
 const execFileAsync = promisify(execFile);
 const accountName = 'Finch E2E Account A';
+const cardName = 'FINCH E2E CARD A';
 
 function localUrl(raw) {
   try {
@@ -55,10 +56,9 @@ async function browser(session, command, ...args) {
       env: { ...process.env, AGENT_BROWSER_HEADED: 'false' },
     });
     return stdout.trim();
-  } catch (error) {
-    const detail = String(error?.stderr ?? error?.message ?? '').replace(/[\r\n]+/g, ' ').slice(0, 300);
+  } catch {
     const target = command === 'click' ? ` target=${JSON.stringify(args[0])}` : '';
-    throw new Error(`Browser step failed: ${command}${target}${detail ? ` (${detail})` : ''}`);
+    throw new Error(`Browser step failed: ${command}${target}`);
   }
 }
 
@@ -133,6 +133,10 @@ async function run(env) {
     assert.ok(account, 'synthetic account fixture missing');
     const opening = cents(account.current_balance);
     assert.ok(opening >= 1000, 'synthetic account needs positive balance');
+    const cards = await request(a, '/api/cards');
+    assert.equal(cards.status, 200);
+    const card = cards.body.find((item) => item.name === cardName);
+    assert.ok(card, 'synthetic card fixture missing');
 
     // Invalid payload cannot create a transaction even if CSRF protection regresses.
     const missingToken = await request(a, '/api/transactions', {
@@ -211,20 +215,123 @@ async function run(env) {
     assert.equal(cents(updated.payments[0].amount), expenseAmount);
     assert.equal(cents((await request(a, `/api/accounts/${account.id}`)).body.current_balance), opening - expenseAmount);
 
+    const cardDescription = `Finch E2E card expense ${suffix}`;
+    await browser(a, 'open', `${web.origin}/transactions`);
+    await browser(a, 'wait', '--text', 'Nova Transação');
+    await clickButton(a, 'Nova Transação');
+    await browser(a, 'wait', 'input[placeholder="Ex: Compra no supermercado"]');
+    await browser(a, 'fill', 'input[placeholder="Ex: Compra no supermercado"]', cardDescription);
+    await browser(a, 'fill', 'input[placeholder="0,00"]', '0,50');
+    await browser(a, 'select', 'div.fixed form select:has(option[value="card"])', 'card');
+    await browser(a, 'wait', `div.fixed form select:has(option[value="${card.id}"])`);
+    await browser(a, 'select', `div.fixed form select:has(option[value="${card.id}"])`, String(card.id));
+    const cardForm = await evaluate(a, `(() => { const form = document.querySelector('div.fixed form'); const checked = (label) => [...(form?.querySelectorAll('label') ?? [])].find((item) => item.textContent.includes(label))?.querySelector('input[type="checkbox"]')?.checked; return { description: form?.querySelector('input[placeholder="Ex: Compra no supermercado"]')?.value, value: form?.querySelector('input[placeholder="0,00"]')?.value, date: form?.querySelector('input[type="date"]')?.value, source: form?.querySelector('select:has(option[value="card"])')?.value, card: form?.querySelector('select:has(option[value="${card.id}"])')?.value, paid: checked('Marcar como paga'), refund: checked('Estorno / crédito no cartão'), installments: checked('Compra parcelada'), valid: form?.checkValidity(), canSave: form?.querySelector('button[type="submit"]')?.textContent.trim() === 'Salvar despesa' }; })()`);
+    assert.equal(cardForm.description, cardDescription, 'card expense description must remain in the form');
+    assert.match(cardForm.date ?? '', /^\d{4}-\d{2}-\d{2}$/, 'card expense date must be valid');
+    assert.deepEqual({ ...cardForm, description: undefined, date: undefined },
+      { description: undefined, value: '0,50', date: undefined, source: 'card', card: String(card.id), paid: false, refund: false, installments: false, valid: true, canSave: true },
+      'card expense form must retain amount, source, card, and unchecked payment flags');
+    await evaluate(a, `(() => { const button = document.querySelector('div.fixed form button[type="submit"]'); if (!button) throw new Error('card save button unavailable'); button.click(); return true; })()`);
+    let cardFormClosed = false;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const result = await evaluate(a, `(() => { const form = document.querySelector('div.fixed form'); if (!form) return { state: 'closed' }; const formError = form.querySelector('span.min-h-5')?.textContent.trim(); const apiError = form.parentElement?.querySelector('p.text-rose-700')?.textContent.trim(); return { state: formError ? 'validation' : apiError ? 'api' : 'pending', knownValidation: formError === 'Selecione um cartão para transações no cartão.' ? 'card' : formError === 'Preencha descrição, valor e data corretamente.' ? 'fields' : 'other' }; })()`);
+      if (result.state === 'closed') { cardFormClosed = true; break; }
+      if (result.state === 'validation') throw new Error(`Card expense form validation failed (${result.knownValidation})`);
+      if (result.state === 'api') throw new Error('Card expense API rejected the UI save');
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    assert.ok(cardFormClosed, 'card expense form did not close after saving');
+    const cardExpense = await findCreatedExpense(a, cardDescription.toUpperCase(), new Set([...initialIds, expense.id]));
+    assert.equal(cardExpense.source, 'card');
+    assert.equal(cardExpense.card?.id, card.id);
+    assert.equal(cents(cardExpense.value), 50);
+    assert.equal(cardExpense.paid, false);
+    assert.match(cardExpense.billing_statement, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(cents((await request(a, `/api/accounts/${account.id}`)).body.current_balance), 100,
+      'card purchase must not debit the account');
+
+    const [statementYear, statementMonth] = cardExpense.billing_statement.split('-').map(Number);
+    const statementPath = `/api/payments?month=${statementMonth}&year=${statementYear}`;
+    const beforeStatementPayment = await request(a, statementPath);
+    assert.equal(beforeStatementPayment.status, 200);
+    const statement = beforeStatementPayment.body.statements.find((item) => item.card.id === card.id);
+    assert.ok(statement, 'card statement must be visible in its billing competence');
+    assert.equal(cents(statement.total_amount), 50);
+    assert.equal(cents(statement.remaining_amount), 50);
+    assert.equal(statement.paid, false);
+
+    await browser(a, 'open', `${web.origin}/payments`);
+    await browser(a, 'wait', '--text', 'Faturas');
+    const monthSelect = 'select:has(option[value="12"])';
+    const yearSelect = `select:has(option[value="${statementYear}"])`;
+    await browser(a, 'wait', monthSelect);
+    await browser(a, 'wait', yearSelect);
+    await browser(a, 'select', monthSelect, String(statementMonth));
+    await browser(a, 'select', yearSelect, String(statementYear));
+    let selectedPeriod;
+    try {
+      selectedPeriod = await evaluate(a, `(() => ({ month: document.querySelector(${JSON.stringify(monthSelect)})?.value, year: document.querySelector(${JSON.stringify(yearSelect)})?.value }))()`);
+    } catch {
+      throw new Error('Payments period inspection failed after selecting month and year');
+    }
+    assert.deepEqual(selectedPeriod, { month: String(statementMonth), year: String(statementYear) },
+      'payments UI must show the card expense billing competence');
+    await browser(a, 'wait', '--text', cardName);
+    await evaluate(a, `(() => { const row = [...document.querySelectorAll('div.rounded-2xl.border.border-neutral-200.p-4')].find((item) => item.textContent.includes(${JSON.stringify(cardName)}) && [...item.querySelectorAll('button')].some((button) => button.textContent.trim() === 'Registrar pagamento')); const button = [...(row?.querySelectorAll('button') ?? [])].find((item) => item.textContent.trim() === 'Registrar pagamento'); if (!button) throw new Error('statement payment button unavailable'); button.click(); return true; })()`);
+    await browser(a, 'wait', '#statement-payment-amount');
+    await browser(a, 'fill', '#statement-payment-amount', '0.25');
+    await browser(a, 'select', 'div.fixed select', String(account.id));
+    await clickButton(a, 'Registrar pagamento da fatura');
+    await browser(a, 'wait', '--text', `Pagamento da fatura do cartão "${cardName}" registrado com sucesso.`);
+    await browser(a, 'wait', '--text', 'Parcialmente paga');
+    const afterStatementPayment = await request(a, statementPath);
+    assert.equal(afterStatementPayment.status, 200);
+    const partialStatement = afterStatementPayment.body.statements.find((item) => item.card.id === card.id);
+    assert.equal(partialStatement?.id != null, true, 'payment must materialize the statement');
+    assert.equal(partialStatement.payment_status, 'partially_paid');
+    assert.equal(partialStatement.paid, false);
+    assert.equal(cents(partialStatement.total_amount), 50);
+    assert.equal(cents(partialStatement.paid_amount), 25);
+    assert.equal(cents(partialStatement.remaining_amount), 25);
+    assert.equal(partialStatement.payments.length, 1);
+    assert.equal(cents(partialStatement.payments[0].amount), 25);
+    assert.equal(partialStatement.payments[0].account.id, account.id);
+    assert.equal(cents((await request(a, `/api/accounts/${account.id}`)).body.current_balance), 75,
+      'partial statement payment must debit only its paid amount');
+    const afterCardPayment = await request(a, '/api/transactions?page=1&per_page=100');
+    assert.equal(afterCardPayment.body.transactions.find((item) => item.id === cardExpense.id)?.paid, false,
+      'partial statement payment must leave the card expense open');
+
     await login(b, web.origin, env.FINCH_E2E_EMAIL_B, env.FINCH_E2E_PASSWORD_B);
     assert.equal((await request(b, `/api/accounts/${account.id}`)).status, 404, 'B cannot read A account');
     const bTransactions = await request(b, '/api/transactions?page=1&per_page=100');
     assert.ok(!bTransactions.body.transactions.some((item) => item.id === expense.id), 'B cannot list A expense');
+    assert.ok(!bTransactions.body.transactions.some((item) => item.id === cardExpense.id), 'B cannot list A card expense');
+    const bCards = await request(b, '/api/cards');
+    assert.equal(bCards.status, 200);
+    assert.ok(!bCards.body.some((item) => item.id === card.id), 'B cannot list A card');
+    const bStatements = await request(b, statementPath);
+    assert.equal(bStatements.status, 200);
+    assert.ok(!bStatements.body.statements.some((item) => item.card.id === card.id), 'B cannot list A statement');
     const bToken = await csrf(b);
     const denied = await request(b, `/api/payments/loose_expenses/${expense.id}/pay`, {
       method: 'POST', headers: { 'content-type': 'application/json', 'x-csrf-token': bToken },
       body: JSON.stringify({ month, year, account_id: account.id, settled_on: now, amount: 1, settle: false }),
     });
     assert.equal(denied.status, 404, 'B cannot pay A expense');
+    const deniedCardPayment = await request(b, `/api/payments/card_statements/${partialStatement.id}/pay`, {
+      method: 'POST', headers: { 'content-type': 'application/json', 'x-csrf-token': bToken },
+      body: JSON.stringify({ account_id: account.id, amount: '0.25' }),
+    });
+    assert.equal(deniedCardPayment.status, 404, 'B cannot pay A card statement');
     const afterDenied = await request(a, '/api/transactions?page=1&per_page=100');
     const unchanged = afterDenied.body.transactions.find((item) => item.id === expense.id);
     assert.equal(unchanged?.payments?.length, 1, 'B denial must not change A settlement');
-    console.log('Financial smoke passed: UI login, CSRF, expense, balance, and A/B ownership.');
+    const afterCardDenial = await request(a, statementPath);
+    const unchangedStatement = afterCardDenial.body.statements.find((item) => item.card.id === card.id);
+    assert.equal(unchangedStatement?.payments?.length, 1, 'B denial must not change A statement');
+    assert.equal(cents((await request(a, `/api/accounts/${account.id}`)).body.current_balance), 75);
+    console.log('Financial smoke passed: UI login, CSRF, loose expense, card statement, balance, and A/B ownership.');
   } finally {
     await Promise.allSettled([browser(a, 'close'), browser(b, 'close')]);
   }
